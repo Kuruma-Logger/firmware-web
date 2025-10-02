@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kuruma-Logger Firmware Installer</title>
+<script type="module" src="https://unpkg.com/esp-web-tools@latest/dist/web/install-button.js?module"></script>
+<h1>Kuruma-Logger Firmware</h1>
+<p>Chrome/Edge で開き、USB接続後に Install を押してください。</p>
+
+
+<h2>M5Stack CoreS3</h2>
+<esp-web-install-button manifest="manifests/coreS3.json"></esp-web-install-button>
+
+
+<h2>Seeed XIAO ESP32C6</h2>
+<esp-web-install-button manifest="manifests/xiao-esp32c6.json"></esp-web-install-button>
+
+
+<hr>
+<h2>ライセンス（JWT）投入</h2>
+<p>note 会員ページから取得したライセンスコードを下に貼り付け、デバイスへ送信します。</p>
+<textarea id="jwt" rows="6" style="width:100%" placeholder="ここにJWTを貼り付け"></textarea>
+<br>
+<button id="serial-connect">デバイスと接続</button>
+<button id="send-jwt">JWT をデバイスへ送信</button>
+<pre id="log" style="background:#111;color:#0f0;padding:8px;min-height:120px"></pre>
+
+
+<script>
+let port, writer, reader;
+const log = (m) => document.getElementById('log').textContent += m + "\n";
+document.getElementById('serial-connect').onclick = async () => {
+try {
+port = await navigator.serial.requestPort();
+await port.open({ baudRate: 115200 });
+writer = port.writable.getWriter();
+reader = port.readable.getReader();
+log('Serial connected. Requesting HWID...');
+await writer.write(new TextEncoder().encode('GET HWID\n'));
+const { value } = await reader.read();
+log('Device: ' + new TextDecoder().decode(value));
+} catch (e) { log('Error: ' + e); }
+};
+
+
+document.getElementById('send-jwt').onclick = async () => {
+const jwt = document.getElementById('jwt').value.trim();
+if (!jwt) { log('JWT が空です'); return; }
+if (!writer) { log('先に接続してください'); return; }
+await writer.write(new TextEncoder().encode('SET JWT ' + jwt + '\n'));
+const { value } = await reader.read();
+log('Device: ' + new TextDecoder().decode(value));
+};
+</script>
+
+
+<p>※ WebUSB対応ブラウザ（Chrome/Edge）必須。WindowsはCP210x等のドライバが必要な場合があります。</p>
+</html>

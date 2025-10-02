@@ -1,0 +1,15 @@
+{
+"name": "Kuruma-Logger (XIAO ESP32S3)",
+"version": "v1.0.0",
+"new_install_prompt_erase": true,
+"builds": [
+{
+"chipFamily": "ESP32-C6",
+"parts": [
+{ "path": "../firmware/xiao_c6/bootloader.bin", "offset": 0 },
+{ "path": "../firmware/xiao_c6/partition-table.bin", "offset": 32768 },
+{ "path": "../firmware/xiao_c6/app.bin", "offset": 65536 }
+]
+}
+]
+}
