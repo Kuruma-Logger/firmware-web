@@ -6,9 +6,9 @@
 {
 "chipFamily": "ESP32-S3",
 "parts": [
-{ "path": "../firmware/coreS3/bootloader.bin", "offset": 0 },
-{ "path": "../firmware/coreS3/partition-table.bin", "offset": 32768 },
-{ "path": "../firmware/coreS3/app.bin", "offset": 65536 }
+{ "path": "../firmware/m5stack_cores3/bootloader.bin", "offset": 0 },
+{ "path": "../firmware/m5stack_cores3/partition-table.bin", "offset": 32768 },
+{ "path": "../firmware/m5stack_cores3/app.bin", "offset": 65536 }
 ]
 }
 ]
