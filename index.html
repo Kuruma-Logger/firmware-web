@@ -17,8 +17,12 @@
 
 
 <hr>
-<h2>ライセンス（JWT）投入</h2>
-<p>note 会員ページから取得したライセンスコードを下に貼り付け、デバイスへ送信します。</p>
+<h2>ライセンス作成ポータル</h2>
+<p>ライセンスの発行と WebSerial での書き込みは <a href="https://ik1-117-65350.vs.sakura.ne.jp/portal/" target="_blank" rel="noopener">VPS ポータル</a> で行います。Discord ロールに応じて初回インストール／アップデート用 JWT を取得できます。</p>
+
+
+<h2>（参考）JWT を手動で書き込みたい場合</h2>
+<p>ポータルから取得した JWT を手動で書き込む場合のみ、以下の WebSerial ツールを利用してください。</p>
 <textarea id="jwt" rows="6" style="width:100%" placeholder="ここにJWTを貼り付け"></textarea>
 <br>
 <button id="serial-connect">デバイスと接続</button>
@@ -30,26 +34,25 @@
 let port, writer, reader;
 const log = (m) => document.getElementById('log').textContent += m + "\n";
 document.getElementById('serial-connect').onclick = async () => {
-try {
-port = await navigator.serial.requestPort();
-await port.open({ baudRate: 115200 });
-writer = port.writable.getWriter();
-reader = port.readable.getReader();
-log('Serial connected. Requesting HWID...');
-await writer.write(new TextEncoder().encode('GET HWID\n'));
-const { value } = await reader.read();
-log('Device: ' + new TextDecoder().decode(value));
-} catch (e) { log('Error: ' + e); }
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+    writer = port.writable.getWriter();
+    reader = port.readable.getReader();
+    log('Serial connected. Requesting HWID...');
+    await writer.write(new TextEncoder().encode('GET HWID\n'));
+    const { value } = await reader.read();
+    log('Device: ' + new TextDecoder().decode(value));
+  } catch (e) { log('Error: ' + e); }
 };
 
-
 document.getElementById('send-jwt').onclick = async () => {
-const jwt = document.getElementById('jwt').value.trim();
-if (!jwt) { log('JWT が空です'); return; }
-if (!writer) { log('先に接続してください'); return; }
-await writer.write(new TextEncoder().encode('SET JWT ' + jwt + '\n'));
-const { value } = await reader.read();
-log('Device: ' + new TextDecoder().decode(value));
+  const jwt = document.getElementById('jwt').value.trim();
+  if (!jwt) { log('JWT が空です'); return; }
+  if (!writer) { log('先に接続してください'); return; }
+  await writer.write(new TextEncoder().encode('SET JWT ' + jwt + '\n'));
+  const { value } = await reader.read();
+  log('Device: ' + new TextDecoder().decode(value));
 };
 </script>
 
