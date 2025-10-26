@@ -1,25 +1,262 @@
 <!doctype html>
 <html lang="ja">
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Kuruma-Logger Firmware Installer</title>
-<script type="module" src="https://unpkg.com/esp-web-tools@latest/dist/web/install-button.js?module"></script>
-<h1>Kuruma-Logger Firmware</h1>
-<p>Chrome/Edge で開き、USB接続後に Install を押してください。</p>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Kuruma-Logger Firmware Installer</title>
+    <script type="module" src="https://unpkg.com/esp-web-tools@latest/dist/web/install-button.js?module"></script>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 0 16px 32px;
+        background: #f4f6f8;
+        color: #1a1a1a;
+      }
+      header {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 32px 0 16px;
+      }
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 10px 24px rgba(15, 30, 65, 0.08);
+        padding: 24px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.8rem;
+      }
+      h2 {
+        margin-top: 32px;
+        font-size: 1.4rem;
+      }
+      p {
+        line-height: 1.6;
+      }
+      .notice {
+        padding: 12px 16px;
+        border-radius: 8px;
+        background: #f0f6ff;
+        border: 1px solid #b3d0ff;
+        margin-bottom: 20px;
+      }
+      .hidden {
+        display: none;
+      }
+      .token-status {
+        font-weight: 600;
+      }
+      .device-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+      }
+      .card {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 20px;
+        background: #fafbff;
+      }
+      button {
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: none;
+        background: #0b3d91;
+        color: #fff;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+      button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+      }
+      textarea {
+        width: 100%;
+        min-height: 120px;
+        border-radius: 8px;
+        border: 1px solid #cbd2d9;
+        padding: 12px;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        font-size: 0.9rem;
+        box-sizing: border-box;
+      }
+      pre {
+        background: #0f172a;
+        color: #cbd5f5;
+        padding: 12px;
+        border-radius: 8px;
+        max-height: 180px;
+        overflow-y: auto;
+        font-size: 0.85rem;
+      }
+      footer {
+        max-width: 960px;
+        margin: 24px auto 0;
+        text-align: center;
+        color: #6b7280;
+        font-size: 0.85rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Kuruma-Logger Firmware Installer</h1>
+      <p>Portal でワンタイムトークンを発行したら、このページでファーム書き込みとライセンス取得をまとめて行います。</p>
+    </header>
+    <main>
+      <section class="notice">
+        <p id="token-info">ポータルから開くと、ワンタイムトークンが自動的に反映されます。</p>
+        <p class="token-status" id="token-status"></p>
+      </section>
 
+      <section>
+        <h2>1. デバイスへファームウェアを書き込む</h2>
+        <p>Chrome / Edge など WebUSB 対応ブラウザでお使いください。USB ケーブルでデバイスを接続し、該当モデルのボタンを押して書き込みを進めます。</p>
+        <div class="device-grid">
+          <div class="card">
+            <h3>M5Stack CoreS3</h3>
+            <esp-web-install-button manifest="manifests/m5stack_cores3.json"></esp-web-install-button>
+          </div>
+          <div class="card">
+            <h3>Seeed XIAO ESP32S3</h3>
+            <esp-web-install-button manifest="manifests/xiao_esp32s3.json"></esp-web-install-button>
+          </div>
+        </div>
+      </section>
 
-<h2>M5Stack CoreS3</h2>
-<esp-web-install-button manifest="manifests/m5stack_cores3.json"></esp-web-install-button>
+      <section>
+        <h2>2. ライセンス JWT を取得</h2>
+        <p>ポータルで発行したワンタイムトークンを使い、同じブラウザでライセンスを取得します。取得後はデバイス設定アプリなどへコピーしてお使いください。</p>
+        <button id="fetch-license" disabled>ライセンスを取得</button>
+        <div id="license-box" class="hidden">
+          <p><strong>JWT:</strong> 有効なライセンスを以下に出力しました。紛失しないよう保存してください。</p>
+          <textarea id="license-output" readonly></textarea>
+          <button id="copy-license">クリップボードにコピー</button>
+          <p id="license-meta"></p>
+        </div>
+      </section>
 
+      <section>
+        <h2>ログ</h2>
+        <pre id="log"></pre>
+      </section>
+    </main>
+    <footer>
+      <p>&copy; Kuruma-Logger installer on GitHub Pages</p>
+      <p><a href="https://ik1-117-65350.vs.sakura.ne.jp/portal/" target="_blank" rel="noopener">ライセンス発行ポータルへ戻る</a></p>
+    </footer>
 
-<h2>Seeed XIAO ESP32S3</h2>
-<esp-web-install-button manifest="manifests/xiao_esp32s3.json"></esp-web-install-button>
+    <script>
+      const portalBaseUrl = 'https://ik1-117-65350.vs.sakura.ne.jp';
+      const params = new URLSearchParams(window.location.search);
+      const tokenParam = params.get('token')?.trim() || '';
+      const purposeParam = params.get('purpose')?.trim() || 'install';
+      const macParam = params.get('mac')?.trim() || '';
+      const fetchBtn = document.getElementById('fetch-license');
+      const licenseBox = document.getElementById('license-box');
+      const licenseOutput = document.getElementById('license-output');
+      const copyBtn = document.getElementById('copy-license');
+      const licenseMeta = document.getElementById('license-meta');
+      const tokenStatus = document.getElementById('token-status');
+      const logEl = document.getElementById('log');
 
+      function log(message) {
+        const ts = new Date().toLocaleTimeString();
+        logEl.textContent += `[${ts}] ${message}\n`;
+        logEl.scrollTop = logEl.scrollHeight;
+      }
 
-<hr>
-<h2>ライセンス作成ポータル</h2>
-<p>ライセンスの発行と WebSerial での書き込みは <a href="https://ik1-117-65350.vs.sakura.ne.jp/portal/" target="_blank" rel="noopener">VPS ポータル</a> で行います。Discord ロールに応じて初回インストール／アップデート用 JWT を取得できます。</p>
+      async function fetchLicense() {
+        if (!tokenParam) {
+          log('トークンが指定されていません');
+          return;
+        }
+        try {
+          fetchBtn.disabled = true;
+          fetchBtn.textContent = '処理中...';
+          log('ライセンス取得を開始');
+          const res = await fetch(`${portalBaseUrl}/api/v1/license/download`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              token: tokenParam,
+              purpose: purposeParam,
+            }),
+          });
 
+          const payload = await res.json();
+          if (!res.ok || !payload?.ok) {
+            const err = payload?.error || `${res.status}`;
+            log(`取得失敗: ${err}`);
+            alert(`ライセンス取得に失敗しました: ${err}\nポータルで再発行してください。`);
+            fetchBtn.disabled = true;
+            fetchBtn.textContent = '取得失敗';
+            return;
+          }
 
-<p>※ WebUSB対応ブラウザ（Chrome/Edge）必須。WindowsはCP210x等のドライバが必要な場合があります。</p>
+          licenseOutput.value = payload.token;
+          const lines = [];
+          if (payload.exp) {
+            const expDate = new Date(payload.exp * 1000);
+            lines.push(`exp: ${expDate.toLocaleString()}`);
+          }
+          if (payload.kid) {
+            lines.push(`kid: ${payload.kid}`);
+          }
+          if (macParam) {
+            lines.push(`MAC: ${macParam}`);
+          }
+          licenseMeta.textContent = lines.join(' / ');
+          licenseBox.classList.remove('hidden');
+          fetchBtn.textContent = '取得済み';
+          log('ライセンス取得が完了しました');
+        } catch (error) {
+          console.error(error);
+          log(`取得エラー: ${error.message}`);
+          alert('ライセンス取得中にエラーが発生しました。ポータルで再試行してください。');
+          fetchBtn.disabled = false;
+          fetchBtn.textContent = 'ライセンスを取得';
+        }
+      }
+
+      if (tokenParam) {
+        tokenStatus.textContent = `受け取ったトークン: ${tokenParam}`;
+        log('ワンタイムトークンを検出しました');
+        fetchBtn.disabled = false;
+      } else {
+        tokenStatus.textContent = 'トークンが見つかりません。まずポータルで発行してください。';
+        log('トークンが指定されていないためライセンス取得ボタンを無効化');
+        fetchBtn.disabled = true;
+      }
+
+      fetchBtn?.addEventListener('click', () => {
+        fetchLicense();
+      });
+
+      copyBtn?.addEventListener('click', async () => {
+        if (!licenseOutput.value) {
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(licenseOutput.value);
+          log('ライセンスをクリップボードへコピーしました');
+          copyBtn.textContent = 'コピー済み';
+          setTimeout(() => {
+            copyBtn.textContent = 'クリップボードにコピー';
+          }, 2000);
+        } catch (error) {
+          console.error(error);
+          alert('クリップボードへコピーできませんでした。手動でコピーしてください。');
+        }
+      });
+    </script>
+  </body>
 </html>
